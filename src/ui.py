@@ -224,22 +224,22 @@ if query:
         keywords_html = "".join([f'<span class="keyword-tag">{k}</span>' for k in keywords])
         
         # Use textwrap.dedent to prevent indentation from being interpreted as code blocks
+        # IMPORTANT: The HTML must be flat (no indentation) to avoid Markdown code block rendering
         html_content = textwrap.dedent(f"""
         <div class="result-card">
-            <div class="result-meta">
-                <span class="result-id">doc_id: {doc_id}</span>
-                <span class="result-score">Hybrid: {score} (Vec: {vec_score} | BM25: {bm25_score})</span>
-            </div>
-            <a href="#" class="result-title">Document Content Preview for {doc_id}</a>
-            <div class="result-snippet">{preview}</div>
-            
-            <div class="insight-box">
-                <div class="insight-header">Why this matched</div>
-                <div class="insight-text">
-                    {reason}<br>
-                    <div style="margin-top: 6px;">{keywords_html}</div>
-                </div>
-            </div>
+        <div class="result-meta">
+        <span class="result-id">doc_id: {doc_id}</span>
+        <span class="result-score">Hybrid: {score} (Vec: {vec_score} | BM25: {bm25_score})</span>
+        </div>
+        <a href="#" class="result-title">Document Content Preview for {doc_id}</a>
+        <div class="result-snippet">{preview}</div>
+        <div class="insight-box">
+        <div class="insight-header">Why this matched</div>
+        <div class="insight-text">
+        {reason}<br>
+        <div style="margin-top: 6px;">{keywords_html}</div>
+        </div>
+        </div>
         </div>
         <hr style="margin: 16px 0; border: 0; border-top: 1px solid #dadce0;">
         """)
