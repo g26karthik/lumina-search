@@ -2,6 +2,7 @@ import streamlit as st
 import time
 import sys
 import os
+import textwrap
 
 # Add project root to path so src can be imported
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -84,11 +85,13 @@ st.markdown("""
         box-shadow: 0 1px 6px rgba(32,33,36,.28);
         transition: all 0.3s;
         color: #202124;
+        background-color: #ffffff; /* Force white background */
     }
     .stTextInput > div > div > input:hover, .stTextInput > div > div > input:focus {
         box-shadow: 0 2px 8px rgba(32,33,36,.35);
         border-color: transparent;
         outline: none;
+        background-color: #ffffff;
     }
     
     /* Result Card */
@@ -105,7 +108,7 @@ st.markdown("""
         color: #202124;
         font-size: 14px;
         display: flex;
-        align_items: center;
+        align-items: center;
         margin-bottom: 4px;
     }
     .result-id {
@@ -194,7 +197,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Search Input
-# label_visibility="collapsed" hides the label but keeps it accessible, fixing the warning
 query = st.text_input("Search Query", placeholder="Search for quantum physics, space, medicine...", value=st.session_state.get("query", ""), label_visibility="collapsed")
 
 if query:
@@ -221,7 +223,8 @@ if query:
         
         keywords_html = "".join([f'<span class="keyword-tag">{k}</span>' for k in keywords])
         
-        st.markdown(f"""
+        # Use textwrap.dedent to prevent indentation from being interpreted as code blocks
+        html_content = textwrap.dedent(f"""
         <div class="result-card">
             <div class="result-meta">
                 <span class="result-id">doc_id: {doc_id}</span>
@@ -239,5 +242,7 @@ if query:
             </div>
         </div>
         <hr style="margin: 16px 0; border: 0; border-top: 1px solid #dadce0;">
-        """, unsafe_allow_html=True)
+        """)
+        
+        st.markdown(html_content, unsafe_allow_html=True)
 
