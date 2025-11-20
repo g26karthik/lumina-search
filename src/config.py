@@ -18,3 +18,11 @@ class Config:
     
     # Logging
     LOG_LEVEL = "INFO"
+    ENABLE_CACHE_LOGGING = True
+    
+    # Persistence
+    FAISS_INDEX_PATH = os.path.join(BASE_DIR, "faiss.index")
+    FAISS_METADATA_PATH = os.path.join(BASE_DIR, "faiss_meta.json")
+    
+    # Debug
+    ENABLE_DEBUG_METRICS = True

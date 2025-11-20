@@ -204,11 +204,16 @@ if query:
     
     start_time = time.time()
     # Direct call to search engine
-    results = search_engine.search(query, top_k=5)
+    results, metrics = search_engine.search(query, top_k=5)
     end_time = time.time()
     
     # Stats
     st.markdown(f'<div class="search-stats">About {len(results)} results ({round(end_time - start_time, 3)} seconds)</div>', unsafe_allow_html=True)
+    
+    # Debug Metrics
+    if Config.ENABLE_DEBUG_METRICS and metrics:
+        with st.expander("Debug Metrics (Latency)"):
+            st.json(metrics)
     
     for res in results:
         doc_id = res['doc_id']

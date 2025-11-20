@@ -16,7 +16,19 @@ class Embedder:
         logger.info(f"Loading embedding model: {model_name}...")
         self.model = SentenceTransformer(model_name)
         self.cache_manager = cache_manager
+        
+        # Stats
+        self.cache_hits = 0
+        self.cache_misses = 0
+        self.total_time_saved_ms = 0.0
+        # Approximate time per embedding (can be calibrated, but 50ms is a reasonable estimate for CPU)
+        self.estimated_embedding_time_ms = 50.0 
+        
         logger.info("Model loaded.")
+
+    def log_cache_stats(self):
+        if Config.ENABLE_CACHE_LOGGING:
+            logger.info(f"Embedding cache summary: {self.cache_hits} hits, {self.cache_misses} misses, {round(self.total_time_saved_ms / 1000, 2)} seconds saved")
 
     def clean_text(self, text: str) -> str:
         text = text.lower()
@@ -63,6 +75,10 @@ class Embedder:
                 cached = self.cache_manager.get_embedding(doc_id, text_hash)
                 if cached is not None:
                     embeddings[i] = cached
+                    self.cache_hits += 1
+                    self.total_time_saved_ms += self.estimated_embedding_time_ms
+                    if Config.ENABLE_CACHE_LOGGING:
+                        logger.debug(f"[Cache] HIT | {doc_id} | reused embedding | 0 ms")
                 else:
                     indices_to_compute.append(i)
                     texts_to_compute.append(text)
@@ -73,11 +89,19 @@ class Embedder:
         # Compute missing embeddings in batch
         if texts_to_compute:
             logger.info(f"Computing embeddings for {len(texts_to_compute)} documents...")
+            import time
+            t0 = time.time()
             computed_embeddings = self.model.encode(texts_to_compute)
+            t1 = time.time()
+            avg_time = (t1 - t0) * 1000 / len(texts_to_compute) if texts_to_compute else 0
             
             for i, idx in enumerate(indices_to_compute):
                 emb = computed_embeddings[i]
                 embeddings[idx] = emb
+                self.cache_misses += 1
+                
+                if Config.ENABLE_CACHE_LOGGING:
+                    logger.debug(f"[Cache] MISS | {doc_ids[idx]} | regenerated embedding | {round(avg_time, 2)} ms")
                 
                 # Save to cache
                 if self.cache_manager:

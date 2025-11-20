@@ -1,5 +1,10 @@
 # Multi-document Embedding Search Engine with Caching
 
+> **Upgrade Summary:**
+> 🔹 **Persistent FAISS Index** — Indexing is incremental; `faiss.index` is saved/loaded to avoid rebuilding.
+> 🔹 **Smart Caching** — Logs cache hits/misses and calculates real-time savings (e.g., "78.4 seconds saved").
+> 🔹 **Query Latency Metrics** — Search API returns detailed breakdown (embedding, vector search, BM25, ranking) for profiling.
+
 **Project Name**: Multi-document Embedding Search Engine with Caching
 **Author**: G Karthik
 
@@ -39,19 +44,6 @@ pip install -r requirements.txt
 
 ### 2. Data Preparation
 Download the 20 Newsgroups dataset:
-```bash
-python download_data.py
-```
-*This will populate `data/docs/` with text files.*
-
-### 3. Embedding Generation
-Embeddings are generated **automatically** on the first run of the API or Search Engine.
-- To trigger it manually (and verify quality):
-```bash
-python verify.py
-```
-*This process uses Batch Processing for speed and caches results in `cache.db`.*
-
 ### 4. Start the API
 Run the FastAPI server:
 ```bash
@@ -100,3 +92,28 @@ Satisfies the mandatory requirement by providing:
 - **Why matched**: A text summary.
 - **Keywords**: List of overlapping tokens between query and document.
 - **Score Breakdown**: Explicitly shows Vector vs. BM25 contribution in the UI.
+
+### F. Persistent Indexing & Incremental Updates
+- **Behavior**: On the first run, the system builds the FAISS index and saves it to `faiss.index` (along with metadata in `faiss_meta.json`).
+- **Incremental**: On subsequent runs, it loads the index from disk. It checks for new or changed documents (using hash comparison) and only computes embeddings for those, appending them to the index. This significantly reduces startup time.
+
+### G. Cache Performance Logging
+- **Tracking**: The system tracks every cache hit and miss.
+- **Output**: On startup (and during batch operations), it logs a summary:
+  ```
+  Embedding cache summary: 143 hits, 12 misses, 78.4 seconds saved
+  ```
+- **Config**: Controlled via `ENABLE_CACHE_LOGGING = True` in `src/config.py`.
+
+### H. Query Latency Metrics
+- **Profiling**: Every search request measures the time taken for each stage of the pipeline.
+- **Response**: The API includes a `debug` field with the breakdown:
+  ```json
+  "debug": {
+    "total_ms": 73.4,
+    "embedding_ms": 12.1,
+    "vector_ms": 21.8,
+    "bm25_ms": 26.4,
+    "ranking_ms": 13.1
+  }
+  ```
