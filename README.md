@@ -1,9 +1,5 @@
 # Multi-document Embedding Search Engine with Caching
 
-> **Upgrade Summary:**
-> 🔹 **Persistent FAISS Index** — Indexing is incremental; `faiss.index` is saved/loaded to avoid rebuilding.
-> 🔹 **Smart Caching** — Logs cache hits/misses and calculates real-time savings (e.g., "78.4 seconds saved").
-> 🔹 **Query Latency Metrics** — Search API returns detailed breakdown (embedding, vector search, BM25, ranking) for profiling.
 
 **Project Name**: Multi-document Embedding Search Engine with Caching
 **Author**: G Karthik
