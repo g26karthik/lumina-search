@@ -2,9 +2,13 @@
 
 
 **Project Name**: Multi-document Embedding Search Engine with Caching
+
+
 **Author**: G Karthik
 
 A lightweight, efficient search engine built over the 20 Newsgroups dataset. It features **Hybrid Search** (Vector + BM25), **Local Caching**, **Async API**, and a **Streamlit UI**.
+
+Live at "https://lumina-search.streamlit.app/
 
 ---
 
@@ -113,3 +117,12 @@ Satisfies the mandatory requirement by providing:
     "ranking_ms": 13.1
   }
   ```
+  ### I. Output's
+
+  <img width="926" height="788" alt="image" src="https://github.com/user-attachments/assets/869ec241-a183-4e36-8d6c-ec3be18060e7" />
+  <img width="941" height="690" alt="image" src="https://github.com/user-attachments/assets/81d303fe-d74c-49ab-9081-7170031f8020" />
+  <img width="980" height="473" alt="image" src="https://github.com/user-attachments/assets/62dc4a0c-13f2-4ed6-8ee3-39a0e3ebd5f2" />
+
+
+
+
