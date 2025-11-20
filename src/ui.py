@@ -227,21 +227,22 @@ if query:
         # IMPORTANT: The HTML must be flat (no indentation) to avoid Markdown code block rendering
         html_content = textwrap.dedent(f"""
         <div class="result-card">
-        <div class="result-meta">
-        <span class="result-id">doc_id: {doc_id}</span>
-        <span class="result-score">Hybrid: {score} (Vec: {vec_score} | BM25: {bm25_score})</span>
+        <a href="#" class="result-title" style="font-size: 18px; text-decoration: none; color: #1a0dab;">Document Content Preview for doc_id : {doc_id},</a>
+        <div style="margin-top: 6px; font-family: monospace; font-size: 14px; color: #202124;">
+        "score": {score} <span style="color: #5f6368;">(Vec: {vec_score} | BM25: {bm25_score})</span> ,
         </div>
-        <a href="#" class="result-title">Document Content Preview for {doc_id}</a>
-        <div class="result-snippet">{preview}</div>
-        <div class="insight-box">
+        <div class="insight-box" style="margin: 12px 0;">
         <div class="insight-header">Why this matched</div>
         <div class="insight-text">
         {reason}<br>
         <div style="margin-top: 6px;">{keywords_html}</div>
         </div>
         </div>
+        <div style="font-family: monospace; font-size: 14px; color: #4d5156; line-height: 1.5;">
+        "preview": "{preview}"
         </div>
-        <hr style="margin: 16px 0; border: 0; border-top: 1px solid #dadce0;">
+        </div>
+        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #dadce0;">
         """)
         
         st.markdown(html_content, unsafe_allow_html=True)
