@@ -1,6 +1,12 @@
 import streamlit as st
 import requests
 import time
+import sys
+import os
+
+# Add project root to path so src can be imported
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from src.config import Config
 
 # Page Config
