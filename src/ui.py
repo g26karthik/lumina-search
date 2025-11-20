@@ -1,5 +1,4 @@
 import streamlit as st
-import requests
 import time
 import sys
 import os
@@ -8,6 +7,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.config import Config
+from src.search_engine import SearchEngine
 
 # Page Config
 st.set_page_config(
@@ -17,38 +17,60 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Custom CSS for "Real Search Engine" Look
+# --- Logic: Direct Integration (No API needed for Streamlit Cloud) ---
+@st.cache_resource
+def get_search_engine():
+    # Initialize engine directly
+    engine = SearchEngine()
+    engine.build_index() # This handles auto-download if needed
+    return engine
+
+try:
+    search_engine = get_search_engine()
+except Exception as e:
+    st.error(f"Failed to initialize search engine: {e}")
+    st.stop()
+
+# --- Custom CSS ---
 st.markdown("""
 <style>
-    /* Main Background */
+    /* Global Styles */
     .stApp {
         background-color: #ffffff;
-        color: #202124;
     }
     
-    /* Hide Streamlit Branding */
+    /* Hide Streamlit Elements */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
     
-    /* Centered Search Container */
+    /* Search Container */
     .search-container {
         display: flex;
         flex-direction: column;
         align-items: center;
-        padding-top: 10vh;
+        padding-top: 8vh;
         padding-bottom: 2rem;
     }
     
-    /* Logo Title */
+    /* Logo */
     .logo-title {
         font-family: 'Product Sans', sans-serif;
-        font-size: 4rem;
+        font-size: 4.5rem;
         font-weight: 700;
+        letter-spacing: -1px;
         background: linear-gradient(90deg, #4285F4, #DB4437, #F4B400, #0F9D58);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        margin-bottom: 1.5rem;
+        margin-bottom: 0.5rem;
+        text-align: center;
+    }
+    
+    /* Subtitle */
+    .subtitle {
+        color: #5f6368;
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
         text-align: center;
     }
     
@@ -58,22 +80,42 @@ st.markdown("""
         border: 1px solid #dfe1e5;
         padding: 12px 24px;
         font-size: 16px;
+        height: 48px;
         box-shadow: 0 1px 6px rgba(32,33,36,.28);
         transition: all 0.3s;
+        color: #202124;
     }
     .stTextInput > div > div > input:hover, .stTextInput > div > div > input:focus {
-        box-shadow: 0 1px 6px rgba(32,33,36,.28);
+        box-shadow: 0 2px 8px rgba(32,33,36,.35);
         border-color: transparent;
-        background-color: #fff;
+        outline: none;
     }
     
     /* Result Card */
     .result-card {
         background-color: #fff;
-        padding: 16px;
-        margin-bottom: 16px;
+        padding: 0px;
+        margin-bottom: 24px;
         border-radius: 8px;
-        transition: transform 0.2s;
+        font-family: arial, sans-serif;
+    }
+    
+    /* Result Meta (URL-like) */
+    .result-meta {
+        color: #202124;
+        font-size: 14px;
+        display: flex;
+        align_items: center;
+        margin-bottom: 4px;
+    }
+    .result-id {
+        color: #202124;
+        font-weight: 400;
+    }
+    .result-score {
+        color: #5f6368;
+        font-size: 12px;
+        margin-left: 8px;
     }
     
     /* Result Title */
@@ -84,32 +126,36 @@ st.markdown("""
         font-weight: 400;
         display: block;
         margin-bottom: 4px;
+        line-height: 1.3;
     }
     .result-title:hover {
         text-decoration: underline;
     }
     
-    /* Result URL/ID */
-    .result-meta {
-        color: #006621;
-        font-size: 14px;
-        margin-bottom: 4px;
-    }
-    
-    /* Result Snippet */
+    /* Snippet */
     .result-snippet {
         color: #4d5156;
         font-size: 14px;
         line-height: 1.58;
+        margin-bottom: 8px;
     }
     
-    /* Explanation Box */
-    .explanation-box {
-        margin-top: 8px;
-        padding: 8px 12px;
+    /* Insight Box */
+    .insight-box {
         background-color: #f8f9fa;
-        border-left: 4px solid #4285F4;
-        border-radius: 4px;
+        border: 1px solid #dadce0;
+        border-radius: 8px;
+        padding: 12px;
+        margin-top: 8px;
+    }
+    .insight-header {
+        font-size: 12px;
+        font-weight: 700;
+        color: #5f6368;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+    }
+    .insight-text {
         font-size: 13px;
         color: #3c4043;
     }
@@ -122,6 +168,7 @@ st.markdown("""
         padding: 2px 8px;
         border-radius: 12px;
         font-size: 12px;
+        font-weight: 500;
         margin-right: 4px;
         margin-top: 4px;
     }
@@ -131,83 +178,66 @@ st.markdown("""
         color: #70757a;
         font-size: 14px;
         margin-bottom: 20px;
-        padding-left: 16px;
+        padding-left: 0px;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# API Endpoint
-API_URL = f"http://{Config.API_HOST}:{Config.API_PORT}/search"
-
-# Session State
-if 'query' not in st.session_state:
-    st.session_state.query = ""
-
 # --- Layout ---
 
-# 1. Header & Search (Centered)
-st.markdown('<div class="search-container"><div class="logo-title">Lumina</div></div>', unsafe_allow_html=True)
+# Header
+st.markdown("""
+    <div class="search-container">
+        <div class="logo-title">Lumina</div>
+        <div class="subtitle">Deep Semantic Search over 20 Newsgroups</div>
+    </div>
+""", unsafe_allow_html=True)
 
-query = st.text_input("", placeholder="Search anything...", value=st.session_state.query)
+# Search Input
+# label_visibility="collapsed" hides the label but keeps it accessible, fixing the warning
+query = st.text_input("Search Query", placeholder="Search for quantum physics, space, medicine...", value=st.session_state.get("query", ""), label_visibility="collapsed")
 
-# Search Button (Hidden visually but triggers submit on enter)
 if query:
     st.session_state.query = query
     
-    # 2. Perform Search
-    try:
-        start_time = time.time()
-        response = requests.post(API_URL, json={"query": query, "top_k": 5})
-        end_time = time.time()
+    start_time = time.time()
+    # Direct call to search engine
+    results = search_engine.search(query, top_k=5)
+    end_time = time.time()
+    
+    # Stats
+    st.markdown(f'<div class="search-stats">About {len(results)} results ({round(end_time - start_time, 3)} seconds)</div>', unsafe_allow_html=True)
+    
+    for res in results:
+        doc_id = res['doc_id']
+        score = res['score']
+        preview = res['preview']
+        explanation = res['explanation']
         
-        if response.status_code == 200:
-            data = response.json()
-            results = data.get("results", [])
+        reason = explanation.get('reason', 'N/A')
+        keywords = explanation.get('matched_keywords', [])
+        vec_score = explanation.get('vector_score', 'N/A')
+        bm25_score = explanation.get('bm25_score', 'N/A')
+        
+        keywords_html = "".join([f'<span class="keyword-tag">{k}</span>' for k in keywords])
+        
+        st.markdown(f"""
+        <div class="result-card">
+            <div class="result-meta">
+                <span class="result-id">doc_id: {doc_id}</span>
+                <span class="result-score">Hybrid: {score} (Vec: {vec_score} | BM25: {bm25_score})</span>
+            </div>
+            <a href="#" class="result-title">Document Content Preview for {doc_id}</a>
+            <div class="result-snippet">{preview}</div>
             
-            # 3. Display Results
-            st.markdown(f'<div class="search-stats">About {len(results)} results ({round(end_time - start_time, 2)} seconds)</div>', unsafe_allow_html=True)
-            
-            for res in results:
-                # Extract Data
-                doc_id = res['doc_id']
-                score = res['score']
-                preview = res['preview']
-                explanation = res['explanation']
-                
-                # Explanation Data
-                reason = explanation.get('reason', 'N/A')
-                keywords = explanation.get('matched_keywords', [])
-                vec_score = explanation.get('vector_score', 'N/A')
-                bm25_score = explanation.get('bm25_score', 'N/A')
-                
-                keywords_html = "".join([f'<span class="keyword-tag">{k}</span>' for k in keywords])
-                
-                # Render Result Card
-                st.markdown(f"""
-                <div class="result-card">
-                    <div class="result-meta">
-                        doc_id: {doc_id} &bull; Hybrid Score: {score} (Vec: {vec_score}, BM25: {bm25_score})
-                    </div>
-                    <a href="#" class="result-title">{doc_id} - Document Content</a>
-                    <div class="result-snippet">{preview}</div>
-                    
-                    <div class="explanation-box">
-                        <strong>💡 Insight:</strong> {reason}<br>
-                        <div style="margin-top: 4px;">{keywords_html}</div>
-                    </div>
+            <div class="insight-box">
+                <div class="insight-header">Why this matched</div>
+                <div class="insight-text">
+                    {reason}<br>
+                    <div style="margin-top: 6px;">{keywords_html}</div>
                 </div>
-                """, unsafe_allow_html=True)
-                
-        else:
-            st.error(f"Error: {response.status_code} - {response.text}")
-            
-    except Exception as e:
-        st.error(f"Connection Error: {e}. Is the API running?")
+            </div>
+        </div>
+        <hr style="margin: 16px 0; border: 0; border-top: 1px solid #dadce0;">
+        """, unsafe_allow_html=True)
 
-else:
-    # Empty state / Helper
-    st.markdown("""
-    <div style="text-align: center; color: #70757a; margin-top: 20px;">
-        Try searching for <b>"space exploration"</b>, <b>"medical research"</b>, or <b>"computer graphics"</b>.
-    </div>
-    """, unsafe_allow_html=True)
