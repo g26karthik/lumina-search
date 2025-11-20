@@ -1,0 +1,10 @@
+sentence-transformers
+faiss-cpu
+fastapi
+uvicorn
+scikit-learn
+streamlit
+numpy
+python-multipart
+rank_bm25
+requests

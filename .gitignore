@@ -1,0 +1,21 @@
+# Data (Assessment Requirement: data/ ignored by Git)
+data/
+cache.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environments
+.env
+.venv
+env/
+venv/
+
+# IDE/Editor
+.vscode/
+.idea/
+*.vsix
+.DS_Store
