@@ -8,7 +8,8 @@
 
 A lightweight, efficient search engine built over the 20 Newsgroups dataset. It features **Hybrid Search** (Vector + BM25), **Local Caching**, **Async API**, and a **Streamlit UI**.
 
-Live at "https://lumina-search.streamlit.app/
+Live at https://lumina-search.streamlit.app/
+
 
 ---
 
