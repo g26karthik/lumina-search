@@ -21,8 +21,17 @@ class SearchEngine:
     def load_documents(self):
         logger.info(f"Loading documents from {self.data_dir}...")
         self.documents = []
+        if not os.path.exists(self.data_dir) or not os.listdir(self.data_dir):
+            logger.info(f"Data directory {self.data_dir} is empty or missing. Downloading dataset...")
+            # Lazy import to avoid circular dependency if any
+            import sys
+            # Add project root to path to find download_data
+            sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            from download_data import download_20newsgroups
+            download_20newsgroups()
+            
         if not os.path.exists(self.data_dir):
-            logger.error(f"Directory {self.data_dir} not found.")
+            logger.error(f"Directory {self.data_dir} not found after download attempt.")
             return
 
         files = sorted([f for f in os.listdir(self.data_dir) if f.endswith(".txt")])

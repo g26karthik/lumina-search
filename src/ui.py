@@ -1,177 +1,207 @@
 import streamlit as st
 import requests
-import json
+import time
+from src.config import Config
 
 # Page Config
 st.set_page_config(
-    page_title="Lumina Search", 
-    page_icon="🔍", 
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_title="Lumina Search",
+    page_icon="🔍",
+    layout="centered",
+    initial_sidebar_state="collapsed"
 )
 
-# Custom CSS for Premium Look
+# Custom CSS for "Real Search Engine" Look
 st.markdown("""
 <style>
     /* Main Background */
     .stApp {
-        background-color: #0e1117;
-        color: #fafafa;
+        background-color: #ffffff;
+        color: #202124;
     }
     
-    /* Sidebar */
-    [data-testid="stSidebar"] {
-        background-color: #161b22;
-        border-right: 1px solid #30363d;
+    /* Hide Streamlit Branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    
+    /* Centered Search Container */
+    .search-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 10vh;
+        padding-bottom: 2rem;
     }
     
-    /* Headers */
-    h1, h2, h3 {
-        font-family: 'Inter', sans-serif;
-        font-weight: 600;
-        color: #ffffff;
+    /* Logo Title */
+    .logo-title {
+        font-family: 'Product Sans', sans-serif;
+        font-size: 4rem;
+        font-weight: 700;
+        background: linear-gradient(90deg, #4285F4, #DB4437, #F4B400, #0F9D58);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 1.5rem;
+        text-align: center;
     }
     
-    /* Search Input */
+    /* Search Input Styling */
     .stTextInput > div > div > input {
-        background-color: #21262d;
-        color: #ffffff;
-        border: 1px solid #30363d;
-        border-radius: 8px;
-        padding: 10px;
+        border-radius: 24px;
+        border: 1px solid #dfe1e5;
+        padding: 12px 24px;
+        font-size: 16px;
+        box-shadow: 0 1px 6px rgba(32,33,36,.28);
+        transition: all 0.3s;
     }
-    .stTextInput > div > div > input:focus {
-        border-color: #58a6ff;
-        box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.3);
-    }
-    
-    /* Buttons */
-    .stButton > button {
-        background-color: #238636;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        padding: 0.5rem 1rem;
-        font-weight: 600;
-        transition: all 0.2s;
-    }
-    .stButton > button:hover {
-        background-color: #2ea043;
-        border-color: #2ea043;
+    .stTextInput > div > div > input:hover, .stTextInput > div > div > input:focus {
+        box-shadow: 0 1px 6px rgba(32,33,36,.28);
+        border-color: transparent;
+        background-color: #fff;
     }
     
-    /* Result Cards */
+    /* Result Card */
     .result-card {
-        background-color: #161b22;
-        border: 1px solid #30363d;
+        background-color: #fff;
+        padding: 16px;
+        margin-bottom: 16px;
         border-radius: 8px;
-        padding: 1.5rem;
-        margin-bottom: 1rem;
-        transition: transform 0.2s, border-color 0.2s;
+        transition: transform 0.2s;
     }
-    .result-card:hover {
-        border-color: #58a6ff;
-        transform: translateY(-2px);
+    
+    /* Result Title */
+    .result-title {
+        color: #1a0dab;
+        font-size: 20px;
+        text-decoration: none;
+        font-weight: 400;
+        display: block;
+        margin-bottom: 4px;
     }
-    .result-score {
-        font-size: 0.85rem;
-        color: #8b949e;
-        margin-bottom: 0.5rem;
+    .result-title:hover {
+        text-decoration: underline;
     }
-    .result-preview {
-        font-size: 1rem;
-        line-height: 1.5;
-        color: #c9d1d9;
-        margin-bottom: 1rem;
+    
+    /* Result URL/ID */
+    .result-meta {
+        color: #006621;
+        font-size: 14px;
+        margin-bottom: 4px;
     }
+    
+    /* Result Snippet */
+    .result-snippet {
+        color: #4d5156;
+        font-size: 14px;
+        line-height: 1.58;
+    }
+    
+    /* Explanation Box */
     .explanation-box {
-        background-color: #21262d;
-        border-radius: 6px;
-        padding: 0.75rem;
-        font-size: 0.9rem;
-        border-left: 3px solid #a371f7;
-    }
-    .keyword-tag {
-        background-color: rgba(56, 139, 253, 0.15);
-        color: #58a6ff;
-        padding: 2px 6px;
+        margin-top: 8px;
+        padding: 8px 12px;
+        background-color: #f8f9fa;
+        border-left: 4px solid #4285F4;
         border-radius: 4px;
-        font-size: 0.8rem;
+        font-size: 13px;
+        color: #3c4043;
+    }
+    
+    /* Tags */
+    .keyword-tag {
+        display: inline-block;
+        background-color: #e8f0fe;
+        color: #1967d2;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 12px;
         margin-right: 4px;
+        margin-top: 4px;
+    }
+    
+    /* Stats */
+    .search-stats {
+        color: #70757a;
+        font-size: 14px;
+        margin-bottom: 20px;
+        padding-left: 16px;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Sidebar
-with st.sidebar:
-    st.title("⚙️ Configuration")
-    st.markdown("---")
-    api_url = st.text_input("API Endpoint", "http://localhost:8000/search")
-    top_k = st.slider("Results per search", 1, 20, 5)
+# API Endpoint
+API_URL = f"http://{Config.API_HOST}:{Config.API_PORT}/search"
+
+# Session State
+if 'query' not in st.session_state:
+    st.session_state.query = ""
+
+# --- Layout ---
+
+# 1. Header & Search (Centered)
+st.markdown('<div class="search-container"><div class="logo-title">Lumina</div></div>', unsafe_allow_html=True)
+
+query = st.text_input("", placeholder="Search anything...", value=st.session_state.query)
+
+# Search Button (Hidden visually but triggers submit on enter)
+if query:
+    st.session_state.query = query
     
-    st.markdown("### About")
-    st.info(
-        "This engine uses **Sentence Transformers** for semantic embedding and **FAISS** for vector search. "
-        "It includes a custom caching layer to optimize performance."
-    )
-
-# Main Content
-st.title("Lumina Search")
-st.markdown("### Explore your document knowledge base")
-
-# Search Section
-col1, col2 = st.columns([4, 1])
-with col1:
-    query = st.text_input("", placeholder="Ask a question or search for a topic...", label_visibility="collapsed")
-with col2:
-    search_button = st.button("Search", use_container_width=True)
-
-if search_button or query:
-    if not query:
-        st.warning("Please enter a search query.")
-    else:
-        with st.spinner("Searching the cosmos..."):
-            try:
-                response = requests.post(api_url, json={"query": query, "top_k": top_k})
-                if response.status_code == 200:
-                    data = response.json()
-                    results = data.get("results", [])
+    # 2. Perform Search
+    try:
+        start_time = time.time()
+        response = requests.post(API_URL, json={"query": query, "top_k": 5})
+        end_time = time.time()
+        
+        if response.status_code == 200:
+            data = response.json()
+            results = data.get("results", [])
+            
+            # 3. Display Results
+            st.markdown(f'<div class="search-stats">About {len(results)} results ({round(end_time - start_time, 2)} seconds)</div>', unsafe_allow_html=True)
+            
+            for res in results:
+                # Extract Data
+                doc_id = res['doc_id']
+                score = res['score']
+                preview = res['preview']
+                explanation = res['explanation']
+                
+                # Explanation Data
+                reason = explanation.get('reason', 'N/A')
+                keywords = explanation.get('matched_keywords', [])
+                vec_score = explanation.get('vector_score', 'N/A')
+                bm25_score = explanation.get('bm25_score', 'N/A')
+                
+                keywords_html = "".join([f'<span class="keyword-tag">{k}</span>' for k in keywords])
+                
+                # Render Result Card
+                st.markdown(f"""
+                <div class="result-card">
+                    <div class="result-meta">
+                        doc_id: {doc_id} &bull; Hybrid Score: {score} (Vec: {vec_score}, BM25: {bm25_score})
+                    </div>
+                    <a href="#" class="result-title">{doc_id} - Document Content</a>
+                    <div class="result-snippet">{preview}</div>
                     
-                    st.markdown(f"Found **{len(results)}** relevant documents")
-                    st.markdown("---")
-                    
-                    for res in results:
-                        # Format explanation keywords
-                        keywords = res['explanation'].get('matched_keywords', [])
-                        keywords_html = "".join([f'<span class="keyword-tag">{k}</span>' for k in keywords])
-                        
-                        # Score breakdown
-                        vec_score = res['explanation'].get('vector_score', 'N/A')
-                        bm25_score = res['explanation'].get('bm25_score', 'N/A')
-                        
-                        st.markdown(f"""
-                        <div class="result-card">
-                            <div class="result-score">
-                                Hybrid Score: {res['score']} | Vector: {vec_score} | BM25: {bm25_score} | Doc ID: {res['doc_id']}
-                            </div>
-                            <div class="result-preview">{res['preview']}</div>
-                            <div class="explanation-box">
-                                <strong>Why this matched:</strong> {res['explanation'].get('reason', 'N/A')}<br>
-                                <div style="margin-top: 8px;">{keywords_html}</div>
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                else:
-                    st.error(f"Error {response.status_code}: {response.text}")
-            except Exception as e:
-                st.error(f"Connection failed: {e}. Is the API running?")
+                    <div class="explanation-box">
+                        <strong>💡 Insight:</strong> {reason}<br>
+                        <div style="margin-top: 4px;">{keywords_html}</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+        else:
+            st.error(f"Error: {response.status_code} - {response.text}")
+            
+    except Exception as e:
+        st.error(f"Connection Error: {e}. Is the API running?")
 
-# Footer
-st.markdown("---")
-st.markdown(
-    "<div style='text-align: center; color: #8b949e; font-size: 0.8rem;'>"
-    "Built by G Karthik Koundinya with FastAPI & Streamlit"
-    "</div>", 
-    unsafe_allow_html=True
-)
+else:
+    # Empty state / Helper
+    st.markdown("""
+    <div style="text-align: center; color: #70757a; margin-top: 20px;">
+        Try searching for <b>"space exploration"</b>, <b>"medical research"</b>, or <b>"computer graphics"</b>.
+    </div>
+    """, unsafe_allow_html=True)
