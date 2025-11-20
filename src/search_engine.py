@@ -27,8 +27,8 @@ class SearchEngine:
             import sys
             # Add project root to path to find download_data
             sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            from download_data import download_20newsgroups
-            download_20newsgroups()
+            from download_data import download_and_save_data
+            download_and_save_data()
             
         if not os.path.exists(self.data_dir):
             logger.error(f"Directory {self.data_dir} not found after download attempt.")
